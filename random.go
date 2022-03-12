@@ -32,20 +32,23 @@ func NewRedisRandClient(ctx context.Context, addr string, pw string, db int) Ran
 
 func (rr *redisRandClient) SetOrGetRand(key string, rc uint32) (uint32, error) {
 	fkey := fmt.Sprintf("kubid:%s", key)
-	cr := rr.rdb.SetNX(rr.ctx, fkey, rc, kubidTTL)
-	if err := cr.Err(); err != nil {
+	pipe := rr.rdb.Pipeline()
+	set := pipe.SetNX(rr.ctx, fkey, rc, kubidTTL)
+	incr := pipe.Incr(rr.ctx, fkey)
+	pipe.Expire(rr.ctx, fkey, kubidTTL)
+	_, pipeErr := pipe.Exec(rr.ctx)
+	if pipeErr != nil {
+		return 0, pipeErr
+	}
+	if err := set.Err(); err != nil {
 		return 0, err
 	}
-	if cr.Val() {
-		return rc, nil
-	}
-	ir := rr.rdb.Incr(rr.ctx, fkey)
-	if err := ir.Err(); err != nil {
+	if err := incr.Err(); err != nil {
 		return 0, err
 	}
-	rd := ir.Val()
+	rd := incr.Val()
 	if rd > math.MaxUint32 {
 		return 0, errors.New("counter overflow, try again next second")
 	}
-	return uint32(ir.Val()), nil
+	return uint32(rd), nil
 }
