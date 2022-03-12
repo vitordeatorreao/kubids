@@ -1,13 +1,14 @@
 # Kubids
 
-A Kubid, pronounced , is a 64-bit number intended to be used as an ID in
+A Kubid, pronounced `ˈkjuːbɪd`, is a 64-bit number intended to be used as an ID in
 distributed systems. It is safe to be disclosed to humans, and under
 certain constraints, can be unique and ever increasing.
 
 As they are small, Kubids work great as Primary Keys for your relational
 database. Also, because they are hard to guess you can disclose them to end
 users. When encoded in base32, they are only 8 alphanumeric characters, which
-is less characters then Social Security Numbers.
+is less characters then Social Security Numbers. You won't run out of Kubids
+until the year 2158.
 
 ## What to consider before using Kubids?
 
@@ -41,6 +42,7 @@ TL;DR: Are Kubids for you? It depends! If you need an ID which is:
 - Unique;
 - Human-readable;
 - Hard to guess.
+
 And you are OK with the latency and availability of Redis, and also the fact
 that this has not been battle tested yet (yolo), then feel free to use Kubids
 in your next project. Remember, the LICENSE states there are no warranties of
