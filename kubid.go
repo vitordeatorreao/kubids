@@ -2,65 +2,77 @@ package kubid
 
 import (
 	"crypto/rand"
-	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 )
 
-var seed = time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
-var max = time.Date(2158, 1, 1, 0, 0, 0, 0, time.UTC)
+var epoch = time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
+var max = time.Date(2161, 5, 15, 0, 0, 0, 0, time.UTC)
 
-type Kubid struct {
-	timestamp  uint32
-	randomness uint32
-}
+const maxRand = 1<<10 - 1
+
+type Kubid uint64
 
 type KubidClient interface {
-	New() (Kubid, error)
+	NewKubid() (Kubid, error)
 }
 
 type kubidClient struct {
-	rand RandClient
+	cnter CollisionCounter
 }
 
-func NewClient(rand RandClient) KubidClient {
-	return kubidClient{rand: rand}
+func NewClient(cnter CollisionCounter) KubidClient {
+	return &kubidClient{cnter: cnter}
 }
 
-func (kc kubidClient) New() (Kubid, error) {
+func (kc *kubidClient) NewKubid() (Kubid, error) {
 	now := time.Now()
-	return kc.NewFromTime(now)
+	return kc.newFromTime(now)
 }
 
-func (kc kubidClient) NewFromTime(t time.Time) (Kubid, error) {
+func (kc *kubidClient) newFromTime(t time.Time) (Kubid, error) {
 	if err := validateTime(t); err != nil {
-		return Kubid{}, err
+		return 0, err
 	}
-	tp := t.Sub(seed).Truncate(time.Second).Milliseconds() / 1000
+	tp := t.Sub(epoch).Milliseconds()
 
-	rc := genRandomCandidate()
-
-	rand, err := kc.rand.SetOrGetRand(fmt.Sprintf("%d", tp), rc)
+	count, err := kc.getCount(tp)
 	if err != nil {
-		return Kubid{}, err
+		return 0, err
 	}
 
-	return Kubid{timestamp: uint32(tp), randomness: rand}, nil
+	rnd, err := genRandom()
+	if err != nil {
+		return 0, err
+	}
+
+	return Kubid(createKubid(tp, count, rnd)), nil
+}
+
+func (kc *kubidClient) getCount(tp int64) (int64, error) {
+	return kc.cnter.GetCollisionCount(fmt.Sprintf("%d", tp))
 }
 
 func validateTime(t time.Time) error {
 	if t.After(max) {
-		return errors.New("cannot create new Kubid after the year 2158")
+		return errors.New("cannot create new Kubid after the year 2161")
 	}
-	if t.Before(seed) {
+	if t.Before(epoch) {
 		return errors.New("cannot create new Kubid before the year 2022")
 	}
 	return nil
 }
 
-func genRandomCandidate() uint32 {
-	b := make([]byte, 32)
-	rand.Read(b)
-	return binary.BigEndian.Uint32(b)
+func genRandom() (int64, error) {
+	rnd, err := rand.Int(rand.Reader, big.NewInt(maxRand))
+	if err != nil {
+		return -1, err
+	}
+	return rnd.Int64(), nil
+}
+
+func createKubid(tp int64, cnt int64, rnd int64) uint64 {
+	return uint64(tp<<22) | uint64(cnt<<10) | uint64(rnd)
 }

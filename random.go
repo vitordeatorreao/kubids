@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -12,43 +11,45 @@ import (
 
 const kubidTTL = 5 * time.Second
 
-type RandClient interface {
-	SetOrGetRand(key string, rc uint32) (uint32, error)
+const maxCount = 1<<12 - 1
+
+type CollisionCounter interface {
+	GetCollisionCount(key string) (int64, error)
 }
 
-type redisRandClient struct {
+type redisCollisionCounter struct {
 	rdb *redis.Client
 	ctx context.Context
 }
 
-func NewRedisRandClient(ctx context.Context, addr string, pw string, db int) RandClient {
+func NewRedisRandClient(ctx context.Context, addr string, pw string, db int) CollisionCounter {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: pw,
 		DB:       db,
 	})
-	return &redisRandClient{rdb: rdb, ctx: ctx}
+	return &redisCollisionCounter{rdb: rdb, ctx: ctx}
 }
 
-func (rr *redisRandClient) SetOrGetRand(key string, rc uint32) (uint32, error) {
+func (rr *redisCollisionCounter) GetCollisionCount(key string) (int64, error) {
 	fkey := fmt.Sprintf("kubid:%s", key)
 	pipe := rr.rdb.Pipeline()
-	set := pipe.SetNX(rr.ctx, fkey, rc, kubidTTL)
+	set := pipe.SetNX(rr.ctx, fkey, -1, kubidTTL)
 	incr := pipe.Incr(rr.ctx, fkey)
 	pipe.Expire(rr.ctx, fkey, kubidTTL)
 	_, pipeErr := pipe.Exec(rr.ctx)
 	if pipeErr != nil {
-		return 0, pipeErr
+		return -1, pipeErr
 	}
 	if err := set.Err(); err != nil {
-		return 0, err
+		return -1, err
 	}
 	if err := incr.Err(); err != nil {
-		return 0, err
+		return -1, err
 	}
-	rd := incr.Val()
-	if rd > math.MaxUint32 {
-		return 0, errors.New("counter overflow, try again next second")
+	count := incr.Val()
+	if count > maxCount {
+		return -1, errors.New("counter overflow, try again next millisecond")
 	}
-	return uint32(rd), nil
+	return count, nil
 }
