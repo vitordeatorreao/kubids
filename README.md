@@ -6,9 +6,38 @@ certain constraints, can be unique and ever increasing.
 
 As they are small, Kubids work great as Primary Keys for your relational
 database. Also, because they are hard to guess you can disclose them to end
-users. When encoded in base32, they are only 8 alphanumeric characters, which
-is less characters then Social Security Numbers. You won't run out of Kubids
-until the year 2158.
+users. You won't run out of Kubids until the year 2161.
+
+## What does a Kubid look like?
+
+Here's an example of a Kubid, which encoded in base64 looks like:
+`AFsB0TY16+o=`. Let's see what each bit represent in the illustration below:
+
+```
+                           AFsB0TY16+o=
+                         0x5b01d13635ebea
+  0000000001011011000000011101000100110110001101011110101111101010
+  ------------------------------------------
+             42 bits for timestamp          ------------
+                      =                          |      ----------
+                  6107383000                     |           |
+           milliseconds since epoch              |           |
+                      =                          |           |
+    epoch: 1640995200000 (1st second of 2022)    |           |
+      epoch + timestamp: 1647102583000           |           |
+                      =                          |           |
+         Sat, 12 Mar 2022 16:29:43 UTC           |           |
+        Won't run out until 2161-05-15           |           |
+                                                 |           |
+                                                 |           |
+                12 bits for collision counter  <--           |
+                             =                               |
+         3450th collision on that millisecond                |
+ Support for up to 4096 collisions in the same ms            |
+                                                             |
+                                                             |
+       10 bits of cryptographically secure randomness      <--
+```
 
 ## What to consider before using Kubids?
 
@@ -24,8 +53,8 @@ Redis instance/cluster. If you have two or more applications generating Kubids
 and pointing to different Redis instances, then collisions should be rare, but
 still possible. The chances of collision for two applications generating Kubids
 at the same time in different Redis instances, are precisely the chances of
-Go's `crypto/rand` package generating two equal 32-bit numbers in the same
-second;
+Go's `crypto/rand` package generating two equal 10-bit numbers in the same
+millisecond;
 - Kubids are not exactly "ever increasing" numbers. That's specially true if
 comparing Kubids generated using different Redis instances. But it is also
 possible on the same Redis. Given two subsequent calls to `KubidClient.New`, if
