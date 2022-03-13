@@ -58,11 +58,11 @@ import (
 	"context"
 	"fmt"
 
-	kubid "github.com/vitordeatorreao/kubids"
+	"github.com/vitordeatorreao/kubids"
 )
 
 func main() {
-	kclient := kubid.NewClient(kubid.NewRedisCollisionCounter(
+	kclient := kubids.NewClient(kubids.NewRedisCollisionCounter(
 		context.Background(),
 		"127.0.0.1:6379",
 		"",
