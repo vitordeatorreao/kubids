@@ -1,11 +1,11 @@
-package kubid
+package kubids
 
 import (
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
-	mock_kubid "github.com/vitordeatorreao/kubids/mocks"
+	mock_kubids "github.com/vitordeatorreao/kubids/mocks"
 )
 
 func TestNewKubidSuccess(t *testing.T) {
@@ -13,7 +13,7 @@ func TestNewKubidSuccess(t *testing.T) {
 
 	defer ctrl.Finish()
 
-	mck := mock_kubid.NewMockCollisionCounter(ctrl)
+	mck := mock_kubids.NewMockCollisionCounter(ctrl)
 
 	colCnt := int64(3450)
 
@@ -47,7 +47,7 @@ func TestNewKubidFailsBeforeEpoch(t *testing.T) {
 
 	defer ctrl.Finish()
 
-	mck := mock_kubid.NewMockCollisionCounter(ctrl)
+	mck := mock_kubids.NewMockCollisionCounter(ctrl)
 
 	client := NewClient(mck).(*kubidClient)
 
@@ -67,7 +67,7 @@ func TestNewKubidFailsAfterMaximum(t *testing.T) {
 
 	defer ctrl.Finish()
 
-	mck := mock_kubid.NewMockCollisionCounter(ctrl)
+	mck := mock_kubids.NewMockCollisionCounter(ctrl)
 
 	client := NewClient(mck).(*kubidClient)
 

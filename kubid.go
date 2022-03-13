@@ -1,4 +1,4 @@
-package kubid
+package kubids
 
 import (
 	"crypto/rand"

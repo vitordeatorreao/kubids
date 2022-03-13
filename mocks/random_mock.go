@@ -2,7 +2,7 @@
 // Source: random.go
 
 // Package mock_kubid is a generated GoMock package.
-package mock_kubid
+package mock_kubids
 
 import (
 	reflect "reflect"

@@ -1,4 +1,4 @@
-package kubid
+package kubids
 
 import (
 	"context"
@@ -22,7 +22,7 @@ type redisCollisionCounter struct {
 	ctx context.Context
 }
 
-func NewRedisRandClient(ctx context.Context, addr string, pw string, db int) CollisionCounter {
+func NewRedisCollisionCounter(ctx context.Context, addr string, pw string, db int) CollisionCounter {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: pw,
