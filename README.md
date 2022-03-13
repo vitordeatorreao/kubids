@@ -39,6 +39,44 @@ Here's an example of a Kubid, which encoded in base64 looks like:
        10 bits of cryptographically secure randomness      <--
 ```
 
+## Example Usage
+
+Here's a few lines of Go which create a new Kubid and print it to the console.
+Notice that you should have a Redis instance running on your local machine. You
+can run Redis through `docker`, for example:
+
+```
+docker container run -d --name kubid-redis -p 6379:6379 redis:6.2-alpine
+```
+
+Then this should work:
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	kubid "github.com/vitordeatorreao/kubids"
+)
+
+func main() {
+	kclient := kubid.NewClient(kubid.NewRedisCollisionCounter(
+		context.Background(),
+		"127.0.0.1:6379",
+		"",
+		0,
+	))
+
+	newid, err := kclient.NewKubid()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(newid)
+}
+```
+
 ## What to consider before using Kubids?
 
 Before you decide use Kubids in production, bear in mind that this is not
